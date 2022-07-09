@@ -94,7 +94,6 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
 
   function checkUpkeep(bytes memory /*checkData*/) public override view returns (bool upkeepNeeded, bytes memory) {
     // returns true for the keeper to run `performUpkeep`
-    // TODO: this should not return true until the time has passed
     upkeepNeeded = ((block.timestamp - s_lastTimeStamp) > i_interval) &&
       (s_participants.length > 0) &&
       (address(this).balance > 0) &&
