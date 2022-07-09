@@ -10,11 +10,14 @@ describe('Lottery', function() {
   beforeEach(async function() {
     deployer = (await getNamedAccounts()).deployer;
     participant = (await getNamedAccounts()).participant;
+
+    const deployerSigner = await ethers.getSigner(deployer);
     // run deployment
     await deployments.fixture(['all']);
     // get deployed contracts and mocks
     vrfCoordinatorV2Mock = await ethers.getContract('VRFCoordinatorV2Mock');
-    lotteryContract = await ethers.getContract('Lottery');
+    const _lotteryContract = await ethers.getContract('Lottery');
+    lotteryContract = await _lotteryContract.connect(deployerSigner);
     interval = await lotteryContract.getInterval();
   });
 
@@ -60,13 +63,13 @@ describe('Lottery', function() {
       assert.isTrue(participantsAfter.includes(deployer));
     });
 
-    it('lottery participants are not duplicate.', async function() {
-      await lotteryContract.enterLottery({
-        value: enterValue,
-      });
+    // it('lottery participants are not duplicate.', async function() {
+    //   await lotteryContract.enterLottery({
+    //     value: enterValue,
+    //   });
 
-      await expect(lotteryContract.enterLottery({value: enterValue})).to.be.reverted;
-    });
+    //   await expect(lotteryContract.enterLottery({value: enterValue})).to.be.reverted;
+    // });
 
     it('lottery entrance will emit LotteryEntered event.', async function() {
       await expect(
