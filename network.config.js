@@ -10,7 +10,7 @@ module.exports = {
       minEntranceFee: ethers.utils.parseEther("0.01"),
       subscriptionId: 7761,
       gasLimit: 1000000,
-      interval: 60, // seconds
+      interval: 300, // seconds
     },
     // hardhat network config
     1337: {
@@ -18,7 +18,7 @@ module.exports = {
       keyHash: '0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc',
       minEntranceFee: ethers.utils.parseEther("0.01"),
       gasLimit: 1000000,
-      interval: 60, // seconds
+      interval: 300, // seconds
     },
   },
   devChains: ['hardhat', 'localhost']
