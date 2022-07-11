@@ -10,6 +10,7 @@ error Lottery__NotSentToWinner();
 error Lottery__LotteryUnplayable();
 error Lottery__PerformUpkeepNotYetNeeded();
 error Lottery__NotEnoughFundToParticipate();
+error Lottery__CannotPlayTwice();
 
 /// @title A lottery contract
 /// @author chain xvi
@@ -21,12 +22,13 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
 
   // lottery data
   address payable[] private s_participants;
-  // mapping (address => uint256) public s_participantToAmount;
-  // mapping (address => bool) s_participantToExists;
-  uint256 private s_lotteryAmount;
+  mapping (address => uint256) private s_participantToAmount;
+  mapping (address => bool) private s_participantToExists;
   address private s_winner;
   bool private s_lotteryPlayable;
   uint256 private immutable i_minEntranceFee;
+  uint256 private s_lotteryAmount;
+  uint256 private s_totalPlayedAmount;
 
   // vrf data
   VRFCoordinatorV2Interface COORDINATOR;
@@ -45,7 +47,14 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
   event PickedWinner(address indexed winner);
   event fulfillRandomWordsCalled(uint256 indexed randomNumber);
 
-  constructor(uint64 subscriptionId, address vrfCoordinator, bytes32 keyHash, uint32 gasLimit, uint256 intervalSeconds, uint256 minEntranceFee) VRFConsumerBaseV2(vrfCoordinator) {
+  constructor(
+    uint64 subscriptionId,
+    address vrfCoordinator,
+    bytes32 keyHash,
+    uint32 gasLimit,
+    uint256 intervalSeconds,
+    uint256 minEntranceFee
+  ) VRFConsumerBaseV2(vrfCoordinator) {
     COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
     i_owner = msg.sender;
     i_interval = intervalSeconds;
@@ -57,7 +66,7 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
     i_gasLimit = gasLimit;
   }
 
-  /// @notice Allows non duplicate participants to enter the lottery
+  /// @notice Allows participants to enter the lottery
   /// @dev This function checks if the lottery is playable to make sure the player enters
   /// where no previous winner is being picked by the VRF.
   /// It also checks if the minimum amount is equal or above the minimum.
@@ -70,8 +79,15 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
       revert Lottery__NotEnoughFundToParticipate();
     }
 
-    s_lotteryAmount += msg.value;
+    if(s_participantToExists[msg.sender]) {
+      revert Lottery__CannotPlayTwice();
+    }
+
+    s_participantToExists[msg.sender] = true;
     s_participants.push(payable(msg.sender));
+    s_participantToAmount[msg.sender] += msg.value;
+    s_lotteryAmount += msg.value;
+    s_totalPlayedAmount += msg.value;
     emit LotteryEntered(msg.sender);
   }
 
@@ -80,6 +96,11 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
     uint256 randomNumber = randomWords[0] % s_participants.length;
     address payable winner = s_participants[randomNumber];
     s_winner = winner;
+    for (uint i = 0; i < s_participants.length; i++) {
+      s_participantToAmount[s_participants[i]] = 0;
+      s_participantToExists[s_participants[i]] = false;
+    }
+    s_lotteryAmount = 0;
     s_participants = new address payable[](0);
     s_lastTimeStamp = block.timestamp;
     emit fulfillRandomWordsCalled(randomNumber);
@@ -105,7 +126,6 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
     if(!upkeepNeeded) {
       revert Lottery__PerformUpkeepNotYetNeeded();
     }
-
     s_lotteryPlayable = false;
     uint256 requestId = COORDINATOR.requestRandomWords(
       i_keyHash,
@@ -169,5 +189,11 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
   /// @return s_lotteryPlayable as bool
   function getLotteryPlayable() public view returns (bool) {
     return s_lotteryPlayable;
+  }
+
+  /// @notice Returns the total played amount of the lottery
+  /// @return s_totalPlayedAmount as uint256
+  function getTotalPlayedAmount() public view returns (uint256) {
+    return s_totalPlayedAmount;
   }
 }

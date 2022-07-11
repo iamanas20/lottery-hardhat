@@ -42,6 +42,14 @@ describe('Lottery', function() {
       await expect(lotteryContract.enterLottery()).to.be.revertedWith('Lottery__NotEnoughFundToParticipate');
     })
 
+    it('lottery participants are not duplicate.', async function() {
+      await lotteryContract.enterLottery({
+        value: enterValue,
+      });
+
+      await expect(lotteryContract.enterLottery({value: enterValue})).to.be.reverted;
+    });
+
     it('if the lottery is entered, it will add to the amount of the Lottery contract', async function() {
       const startingLotteryBalance = await ethers.provider.getBalance(lotteryContract.address);
       await lotteryContract.enterLottery({
@@ -63,13 +71,16 @@ describe('Lottery', function() {
       assert.isTrue(participantsAfter.includes(deployer));
     });
 
-    // it('lottery participants are not duplicate.', async function() {
-    //   await lotteryContract.enterLottery({
-    //     value: enterValue,
-    //   });
+    it('if the lottery is entered, it will add to the total played amount', async function() {
+      const amountBefore = await lotteryContract.getTotalPlayedAmount();
 
-    //   await expect(lotteryContract.enterLottery({value: enterValue})).to.be.reverted;
-    // });
+      await lotteryContract.enterLottery({
+        value: enterValue,
+      });
+
+      const amountAfter = await lotteryContract.getTotalPlayedAmount();
+      assert.equal(amountBefore.add(enterValue).toString(), amountAfter.toString());
+    });
 
     it('lottery entrance will emit LotteryEntered event.', async function() {
       await expect(
