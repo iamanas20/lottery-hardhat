@@ -47,7 +47,7 @@ describe('Lottery', function() {
         value: enterValue,
       });
 
-      await expect(lotteryContract.enterLottery({value: enterValue})).to.be.reverted;
+      await expect(lotteryContract.enterLottery({value: enterValue})).to.be.revertedWith('Lottery__CannotPlayTwice');
     });
 
     it('if the lottery is entered, it will add to the amount of the Lottery contract', async function() {

@@ -59,7 +59,6 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
     i_owner = msg.sender;
     i_interval = intervalSeconds;
     s_lotteryPlayable = true;
-    s_lastTimeStamp = block.timestamp;
     i_keyHash = keyHash;
     i_minEntranceFee = minEntranceFee;
     i_subscriptionId = subscriptionId;
@@ -83,6 +82,10 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
       revert Lottery__CannotPlayTwice();
     }
 
+    if(s_participants.length == 0) {
+      s_lastTimeStamp = block.timestamp;
+    }
+
     s_participantToExists[msg.sender] = true;
     s_participantToAmount[msg.sender] += msg.value;
     s_lotteryAmount += msg.value;
@@ -102,7 +105,6 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
     }
     s_lotteryAmount = 0;
     s_participants = new address payable[](0);
-    s_lastTimeStamp = block.timestamp;
     emit fulfillRandomWordsCalled(randomNumber);
 
     (bool success, ) = s_winner.call{value: address(this).balance}("");
