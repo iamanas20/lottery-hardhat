@@ -24,6 +24,7 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
   address payable[] private s_participants;
   mapping (address => uint256) public s_participantToAmount;
   mapping (address => bool) public s_participantToExists;
+  mapping (address => uint256) public s_participantToDateEntered;
   address private s_winner;
   bool private s_lotteryPlayable;
   uint256 private immutable i_minEntranceFee;
@@ -88,6 +89,7 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
 
     s_participantToExists[msg.sender] = true;
     s_participantToAmount[msg.sender] += msg.value;
+    s_participantToDateEntered[msg.sender] += block.timestamp;
     s_lotteryAmount += msg.value;
     s_totalPlayedAmount += msg.value;
     s_participants.push(payable(msg.sender));
@@ -101,6 +103,7 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
     s_winner = winner;
     for (uint i = 0; i < s_participants.length; i++) {
       s_participantToAmount[s_participants[i]] = 0;
+      s_participantToDateEntered[s_participants[i]] = 0;
       s_participantToExists[s_participants[i]] = false;
     }
     s_lotteryAmount = 0;
